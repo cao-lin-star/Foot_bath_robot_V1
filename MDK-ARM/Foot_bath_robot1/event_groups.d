@@ -1,0 +1,15 @@
+foot_bath_robot1\event_groups.o: ../Middlewares/Third_Party/FreeRTOS/Source/event_groups.c
+foot_bath_robot1\event_groups.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
+foot_bath_robot1\event_groups.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h
+foot_bath_robot1\event_groups.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
+foot_bath_robot1\event_groups.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+foot_bath_robot1\event_groups.o: ../Core/Inc/FreeRTOSConfig.h
+foot_bath_robot1\event_groups.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h
+foot_bath_robot1\event_groups.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/portable.h
+foot_bath_robot1\event_groups.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/deprecated_definitions.h
+foot_bath_robot1\event_groups.o: ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM3/portmacro.h
+foot_bath_robot1\event_groups.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/mpu_wrappers.h
+foot_bath_robot1\event_groups.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/task.h
+foot_bath_robot1\event_groups.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/list.h
+foot_bath_robot1\event_groups.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/timers.h
+foot_bath_robot1\event_groups.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/event_groups.h
