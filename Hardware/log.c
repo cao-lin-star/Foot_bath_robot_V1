@@ -9,18 +9,23 @@
 #include <stdio.h>
 #include <string.h>
 
+
+//环形缓冲区总长度
 #ifndef LOGGING_TX_BUFFER_LEN
 #define LOGGING_TX_BUFFER_LEN       512U
 #endif
 
+// DMA 每次发送的最大字节数
 #ifndef LOGGING_TX_DMA_CHUNK_LEN
 #define LOGGING_TX_DMA_CHUNK_LEN    64U
 #endif
 
+// printf 格式化缓冲区大小
 #ifndef LOGGING_PRINTF_BUFFER_LEN
 #define LOGGING_PRINTF_BUFFER_LEN   160U
 #endif
 
+//重定义fputc函数，使printf函数能够通过UART发送数据
 #if defined(__CC_ARM)
 #pragma import(__use_no_semihosting)
 struct __FILE
@@ -35,13 +40,15 @@ void _sys_exit(int x)
 }
 #endif
 
-static volatile HAL_StatusTypeDef logging_last_status = HAL_OK;
-static uint8_t logging_tx_buffer[LOGGING_TX_BUFFER_LEN];
-static uint8_t logging_tx_dma_buffer[LOGGING_TX_DMA_CHUNK_LEN];
-static volatile uint16_t logging_tx_head;
-static volatile uint16_t logging_tx_tail;
-static volatile uint8_t logging_dma_busy;
 
+static volatile HAL_StatusTypeDef logging_last_status = HAL_OK;   //最后一次操作状态
+static uint8_t logging_tx_buffer[LOGGING_TX_BUFFER_LEN];          //日志环形缓冲区
+static uint8_t logging_tx_dma_buffer[LOGGING_TX_DMA_CHUNK_LEN];   // DMA 发送缓存
+static volatile uint16_t logging_tx_head;                   //环形缓冲区头索引      
+static volatile uint16_t logging_tx_tail;                   //环形缓冲区尾索引
+static volatile uint8_t logging_dma_busy;                   //DMA 发送忙标志
+
+//恢复中断状态
 static void Logging_RestoreIrq(uint32_t primask)
 {
   if (primask == 0U)
@@ -50,6 +57,7 @@ static void Logging_RestoreIrq(uint32_t primask)
   }
 }
 
+//计算下一个索引位置
 static uint16_t Logging_NextIndex(uint16_t index)
 {
   index++;
@@ -60,6 +68,7 @@ static uint16_t Logging_NextIndex(uint16_t index)
   return index;
 }
 
+//启动DMA发送日志数据
 static void Logging_StartTxDma(void)
 {
   HAL_StatusTypeDef status;
@@ -110,6 +119,7 @@ static void Logging_StartTxDma(void)
   Logging_RestoreIrq(primask);
 }
 
+//往环形缓冲区写入数据，并尝试启动DMA发送
 static void Logging_WriteBuffer(const uint8_t *data, uint16_t length)
 {
   uint16_t next_head;
@@ -143,6 +153,7 @@ static void Logging_WriteBuffer(const uint8_t *data, uint16_t length)
   Logging_StartTxDma();
 }
 
+//重定义fputc函数，使printf函数能够通过UART发送数据
 int fputc(int ch, FILE *f)
 {
   uint8_t data;
@@ -153,6 +164,7 @@ int fputc(int ch, FILE *f)
   return ch;
 }
 
+//日志模块初始化
 void Logging_Init(void)
 {
   uint32_t primask;
@@ -165,9 +177,11 @@ void Logging_Init(void)
   logging_last_status = HAL_OK;
   Logging_RestoreIrq(primask);
 
-  Logging_Print("LOG UART3 READY\r\n");
+  //调试信息，表明日志模块已初始化完成，UART3 可用
+  Logging_Print("LOG is ready\r\n");
 }
 
+//打印字符串
 void Logging_Print(const char *msg)
 {
   size_t length;
@@ -186,6 +200,8 @@ void Logging_Print(const char *msg)
   }
 }
 
+
+//格式化打印，类似于printf函数
 void Logging_Printf(const char *fmt, ...)
 {
   va_list args;
@@ -221,6 +237,7 @@ void Logging_Printf(const char *fmt, ...)
   }
 }
 
+//日志任务处理函数，负责定期打印系统状态信息
 void Logging_TaskProcess(void)
 {
   int16_t temp_x10;
@@ -250,11 +267,13 @@ void Logging_TaskProcess(void)
                  SystemMonitor_GetErrCode2());
 }
 
+// 获取最后状态
 HAL_StatusTypeDef Logging_GetLastStatus(void)
 {
   return logging_last_status;
 }
 
+//DMA发送回调
 void Logging_TxCpltCallback(UART_HandleTypeDef *huart)
 {
   uint32_t primask;
@@ -272,6 +291,7 @@ void Logging_TxCpltCallback(UART_HandleTypeDef *huart)
   Logging_StartTxDma();
 }
 
+//串口错误回调
 void Logging_ErrorCallback(UART_HandleTypeDef *huart)
 {
   uint32_t primask;
