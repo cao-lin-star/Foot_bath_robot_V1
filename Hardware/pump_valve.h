@@ -18,9 +18,9 @@ extern "C" {
 
 typedef enum
 {
-  PUMP_VALVE_MODE_OFF = 0,
-  PUMP_VALVE_MODE_CIRCULATION = 1,
-  PUMP_VALVE_MODE_DRAIN = 2
+  PUMP_VALVE_MODE_OFF = 0,                // 关闭
+  PUMP_VALVE_MODE_CIRCULATION = 1,        // 循环
+  PUMP_VALVE_MODE_DRAIN = 2             // 排水
 } PumpValveMode_t;
 
 void PumpValve_Init(void);

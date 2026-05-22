@@ -57,24 +57,26 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define NTC_TEMP_Pin GPIO_PIN_0
-#define NTC_TEMP_GPIO_Port GPIOA
+#define W_LEVEL_Pin GPIO_PIN_0
+#define W_LEVEL_GPIO_Port GPIOA
 #define EN_HEAT_Pin GPIO_PIN_1
 #define EN_HEAT_GPIO_Port GPIOA
 #define MCU_TX_Pin GPIO_PIN_2
 #define MCU_TX_GPIO_Port GPIOA
 #define MCU_RX_Pin GPIO_PIN_3
 #define MCU_RX_GPIO_Port GPIOA
-#define AD_PUMP_I_Pin GPIO_PIN_4
-#define AD_PUMP_I_GPIO_Port GPIOA
+#define AD_DCIN_Pin GPIO_PIN_4
+#define AD_DCIN_GPIO_Port GPIOA
 #define AD_BAT_V_Pin GPIO_PIN_5
 #define AD_BAT_V_GPIO_Port GPIOA
 #define DCIN_ON_Pin GPIO_PIN_6
 #define DCIN_ON_GPIO_Port GPIOA
-#define AD_DCIN_Pin GPIO_PIN_0
-#define AD_DCIN_GPIO_Port GPIOB
-#define AD_BAT_SW_Pin GPIO_PIN_1
-#define AD_BAT_SW_GPIO_Port GPIOB
+#define AD_NTC_Pin GPIO_PIN_7
+#define AD_NTC_GPIO_Port GPIOA
+#define AD_PUMP_I_Pin GPIO_PIN_0
+#define AD_PUMP_I_GPIO_Port GPIOB
+#define AD_MOTOR_I_Pin GPIO_PIN_1
+#define AD_MOTOR_I_GPIO_Port GPIOB
 #define Log_TX_Pin GPIO_PIN_10
 #define Log_TX_GPIO_Port GPIOB
 #define Log_RX_Pin GPIO_PIN_11
@@ -83,8 +85,6 @@ void Error_Handler(void);
 #define Linux_TX_GPIO_Port GPIOA
 #define Linux_RX_Pin GPIO_PIN_10
 #define Linux_RX_GPIO_Port GPIOA
-#define HEAT_Pin GPIO_PIN_12
-#define HEAT_GPIO_Port GPIOA
 #define EN_PUMP_Pin GPIO_PIN_15
 #define EN_PUMP_GPIO_Port GPIOA
 #define EN_NTC_Pin GPIO_PIN_3

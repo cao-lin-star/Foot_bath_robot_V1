@@ -50,7 +50,7 @@ void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, EN_HEAT_Pin|DCIN_ON_Pin|HEAT_Pin|EN_PUMP_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, EN_HEAT_Pin|DCIN_ON_Pin|EN_PUMP_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, EN_NTC_Pin|EN_TWV_Pin|EN_UV_Pin, GPIO_PIN_RESET);
@@ -61,13 +61,6 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : HEAT_Pin */
-  GPIO_InitStruct.Pin = HEAT_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(HEAT_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : EN_NTC_Pin EN_TWV_Pin EN_UV_Pin */
   GPIO_InitStruct.Pin = EN_NTC_Pin|EN_TWV_Pin|EN_UV_Pin;

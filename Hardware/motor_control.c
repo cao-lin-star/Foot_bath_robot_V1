@@ -2,15 +2,16 @@
 #include "sensor.h"
 #include "tim.h"
 
-static uint8_t motor_level;
-static uint8_t motor_manual_duty;
-static uint8_t motor_running;
-static uint8_t motor_fault;
-static uint8_t motor_auto_reverse;
-static uint32_t motor_reverse_interval_ms = MOTOR_AUTO_REVERSE_MS;
-static uint32_t motor_last_reverse_tick;
-static MotorDirection_t motor_direction = MOTOR_DIR_FORWARD;
+static uint8_t motor_level;           //电机档位：0=停止，1/2/3档
+static uint8_t motor_manual_duty;     //手动占空比（0~100%）
+static uint8_t motor_running;         //电机运行状态 0=停止 1=运行
+static uint8_t motor_fault;           //电机故障标志 0=正常 1=故障
+static uint8_t motor_auto_reverse;      //自动反转使能 0=禁用 1=启用
+static uint32_t motor_reverse_interval_ms = MOTOR_AUTO_REVERSE_MS;    //自动反转间隔时间（毫秒）
+static uint32_t motor_last_reverse_tick;                              //上次反转时间，用于自动反转计时
+static MotorDirection_t motor_direction = MOTOR_DIR_FORWARD;          //电机当前转向
 
+//根据档位获取对应的占空比
 static uint8_t Motor_LevelToDuty(uint8_t level)
 {
   switch (level)
@@ -26,6 +27,7 @@ static uint8_t Motor_LevelToDuty(uint8_t level)
   }
 }
 
+//将占空比转换为定时器比较值
 static uint32_t Motor_DutyToPulse(TIM_HandleTypeDef *htim, uint8_t duty_percent)
 {
   uint32_t period;
@@ -44,6 +46,7 @@ static uint32_t Motor_DutyToPulse(TIM_HandleTypeDef *htim, uint8_t duty_percent)
   return pulse;
 }
 
+//设置定时器通道的占空比
 static void Motor_SetTimerChannel(TIM_HandleTypeDef *htim, uint32_t channel, uint8_t duty_percent)
 {
   __HAL_TIM_SET_COMPARE(htim, channel, Motor_DutyToPulse(htim, duty_percent));
@@ -82,6 +85,7 @@ static void Motor_ApplyPwm(uint8_t duty_percent, MotorDirection_t direction)
 #endif
 }
 
+//电机控制模块初始化
 void Motor_Init(void)
 {
 #if MOTOR_USE_TIM4_PWM
@@ -106,6 +110,7 @@ void Motor_Init(void)
   Motor_ApplyPwm(0U, motor_direction);
 }
 
+//设置电机运行速度和方向
 void Motor_Run(uint8_t speed, uint8_t direction)
 {
   motor_direction = (direction != 0U) ? MOTOR_DIR_REVERSE : MOTOR_DIR_FORWARD;
@@ -125,6 +130,7 @@ void Motor_Run(uint8_t speed, uint8_t direction)
   }
 }
 
+//  停止电机
 void Motor_Stop(void)
 {
   motor_level = 0U;
@@ -133,6 +139,7 @@ void Motor_Stop(void)
   Motor_ApplyPwm(0U, motor_direction);
 }
 
+//设置电机档位（0=停止 1/2/3档）
 void Motor_SetLevel(uint8_t level)
 {
   if (level > 3U)
@@ -148,12 +155,14 @@ void Motor_SetLevel(uint8_t level)
   }
 }
 
+//设置电机转向
 void Motor_SetDirection(MotorDirection_t direction)
 {
   motor_direction = direction;
   motor_last_reverse_tick = HAL_GetTick();
 }
 
+//设置自动反转功能
 void Motor_SetAutoReverse(uint8_t enable, uint32_t interval_ms)
 {
   motor_auto_reverse = (enable != 0U) ? 1U : 0U;
@@ -164,11 +173,13 @@ void Motor_SetAutoReverse(uint8_t enable, uint32_t interval_ms)
   motor_last_reverse_tick = HAL_GetTick();
 }
 
+//获取当前电机档位
 uint8_t Motor_GetLevel(void)
 {
   return motor_level;
 }
 
+//获取当前占空比（0~100%）
 uint8_t Motor_GetDutyPercent(void)
 {
   if (motor_manual_duty != 0U)
@@ -178,26 +189,31 @@ uint8_t Motor_GetDutyPercent(void)
   return Motor_LevelToDuty(motor_level);
 }
 
+//获取当前转向
 MotorDirection_t Motor_GetDirection(void)
 {
   return motor_direction;
 }
 
+//检查电机是否正在运行
 uint8_t Motor_IsRunning(void)
 {
   return motor_running;
 }
 
+//检查电机是否发生故障
 uint8_t Motor_HasFault(void)
 {
   return motor_fault;
 }
 
+//清除电机故障状态
 void Motor_ClearFault(void)
 {
   motor_fault = 0U;
 }
 
+//电机控制任务处理函数，负责自动反转和过流保护
 void Motor_TaskProcess(void)
 {
   uint32_t now;

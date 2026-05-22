@@ -9,48 +9,55 @@
 #include "uv_lamp.h"
 #include <string.h>
 
+//通信状态上报周期（毫秒）
 #ifndef UART_COMM_STATUS_PERIOD_MS
 #define UART_COMM_STATUS_PERIOD_MS       1000UL
 #endif
 
+//通信基准超时时间（毫秒），用于判断通信是否正常
 #ifndef UART_COMM_BASE_TIMEOUT_MS
 #define UART_COMM_BASE_TIMEOUT_MS        3000UL
 #endif
 
+// 强制波特率115200
 #ifndef UART_COMM_FORCE_PROTOCOL_BAUD
 #define UART_COMM_FORCE_PROTOCOL_BAUD    1U
 #endif
 
+// 接收DMA缓冲区长度
 #ifndef UART_COMM_RX_DMA_BUFFER_LEN
 #define UART_COMM_RX_DMA_BUFFER_LEN      128U
 #endif
 
-#define UART_CMD_IDLE                    0x00U
-#define UART_CMD_BUCKET_OFF              0xA0U
-#define UART_CMD_BUCKET_STANDBY          0xA1U
-#define UART_CMD_BUCKET_TEMP_ON          0xA2U
-#define UART_CMD_BUCKET_TEMP_OFF         0xA3U
-#define UART_CMD_BUCKET_MOTOR            0xA4U
-#define UART_CMD_BUCKET_UV               0xA5U
-#define UART_CMD_BUCKET_TIMER            0xA6U
-#define UART_CMD_BUCKET_STOP             0xA7U
-#define UART_CMD_BUCKET_SELF_CHECK       0xA8U
-#define UART_CMD_BUCKET_LOW_POWER        0xA9U
-#define UART_CMD_BASE_DRAIN              0xB4U
-#define UART_CMD_SYSTEM_RESET            0xC0U
+#define UART_CMD_IDLE                    0x00U      //空闲
+#define UART_CMD_BUCKET_OFF              0xA0U      //关闭
+#define UART_CMD_BUCKET_STANDBY          0xA1U      // 待机
+#define UART_CMD_BUCKET_TEMP_ON          0xA2U      // 加热开启
+#define UART_CMD_BUCKET_TEMP_OFF         0xA3U      // 加热关闭
+#define UART_CMD_BUCKET_MOTOR            0xA4U      // 电机
+#define UART_CMD_BUCKET_UV               0xA5U      // UV灯
+#define UART_CMD_BUCKET_TIMER            0xA6U      // 定时
+#define UART_CMD_BUCKET_STOP             0xA7U      // 停止所有
+#define UART_CMD_BUCKET_SELF_CHECK       0xA8U      // 自检
+#define UART_CMD_BUCKET_LOW_POWER        0xA9U      // 低功耗
+#define UART_CMD_BASE_DRAIN              0xB4U      // 排水
+#define UART_CMD_SYSTEM_RESET            0xC0U      // 系统复位
 
+// 解析器结构体：接收缓冲区 + 当前位置
 typedef struct
 {
   uint8_t buffer[UART_COMM_FRAME_LEN];
   uint8_t index;
 } UartParser_t;
 
+// 帧接收槽：完整帧 + 就绪标志
 typedef struct
 {
   uint8_t frame[UART_COMM_FRAME_LEN];
   volatile uint8_t ready;
 } UartFrameSlot_t;
 
+// 发送槽：当前发送帧、待发送帧、忙状态
 typedef struct
 {
   UART_HandleTypeDef *huart;
@@ -60,21 +67,29 @@ typedef struct
   volatile uint8_t pending;
 } UartTxSlot_t;
 
+// 两个串口解析器：linux(串口1)、base(串口2)
 static UartParser_t linux_parser;
 static UartParser_t base_parser;
 static UartFrameSlot_t linux_rx_slot;
 static UartFrameSlot_t base_rx_slot;
+
+// DMA接收缓冲区
 static uint8_t linux_rx_dma_buffer[UART_COMM_RX_DMA_BUFFER_LEN];
 static uint8_t base_rx_dma_buffer[UART_COMM_RX_DMA_BUFFER_LEN];
 static uint16_t linux_rx_dma_pos;
 static uint16_t base_rx_dma_pos;
+
+//发送控制
 static UartTxSlot_t linux_tx_slot;
 static UartTxSlot_t base_tx_slot;
+
+//底座数据、时间、状态
 static uint8_t base_data[13];
 static uint32_t base_last_rx_tick;
 static uint32_t last_status_tx_tick;
 static uint8_t last_link_mode = UART_COMM_DEFAULT_LINK_MODE;
 
+//系统复位控制
 static void UART_Comm_RestoreIrq(uint32_t primask)
 {
   if (primask == 0U)
@@ -83,6 +98,7 @@ static void UART_Comm_RestoreIrq(uint32_t primask)
   }
 }
 
+//计算帧校验和
 uint8_t UART_Comm_Checksum(const uint8_t *frame)
 {
   uint16_t sum;
@@ -100,6 +116,7 @@ uint8_t UART_Comm_Checksum(const uint8_t *frame)
   return (uint8_t)(sum & 0xFFU);
 }
 
+//验证帧格式和校验和
 uint8_t UART_Comm_IsFrameValid(const uint8_t *frame)
 {
   if (frame == NULL)
@@ -113,6 +130,7 @@ uint8_t UART_Comm_IsFrameValid(const uint8_t *frame)
   return (UART_Comm_Checksum(frame) == frame[29]) ? 1U : 0U;
 }
 
+//存储接收到的完整帧到槽位
 static void UART_Comm_StoreFrame(UartFrameSlot_t *slot, const uint8_t *frame)
 {
   if ((slot == NULL) || (frame == NULL))
@@ -123,6 +141,7 @@ static void UART_Comm_StoreFrame(UartFrameSlot_t *slot, const uint8_t *frame)
   slot->ready = 1U;
 }
 
+//解析器推入新字节，自动识别帧头并组装完整帧
 static void UART_Comm_ParserPush(UartParser_t *parser, UartFrameSlot_t *slot, uint8_t byte)
 {
   if ((parser == NULL) || (slot == NULL))
@@ -163,6 +182,7 @@ static void UART_Comm_ParserPush(UartParser_t *parser, UartFrameSlot_t *slot, ui
   }
 }
 
+//尝试从槽位获取完整帧，成功返回1，否则返回0
 static uint8_t UART_Comm_FetchFrame(UartFrameSlot_t *slot, uint8_t *out_frame)
 {
   uint8_t ready;
@@ -186,6 +206,7 @@ static uint8_t UART_Comm_FetchFrame(UartFrameSlot_t *slot, uint8_t *out_frame)
   return ready;
 }
 
+//根据UART句柄获取对应的发送槽位
 static UartTxSlot_t *UART_Comm_GetTxSlot(UART_HandleTypeDef *huart)
 {
   if (huart == &huart1)
@@ -199,6 +220,7 @@ static UartTxSlot_t *UART_Comm_GetTxSlot(UART_HandleTypeDef *huart)
   return NULL;
 }
 
+//启动DMA接收一个帧，成功返回HAL_OK，否则返回错误码
 static HAL_StatusTypeDef UART_Comm_StartReceiveOne(UART_HandleTypeDef *huart, uint8_t *buffer, uint16_t *old_pos)
 {
   HAL_StatusTypeDef status;
@@ -217,6 +239,7 @@ static HAL_StatusTypeDef UART_Comm_StartReceiveOne(UART_HandleTypeDef *huart, ui
   return status;
 }
 
+//停止DMA接收
 static void UART_Comm_StopReceiveOne(UART_HandleTypeDef *huart)
 {
   if (huart == NULL)
@@ -235,6 +258,7 @@ static void UART_Comm_StopReceiveOne(UART_HandleTypeDef *huart)
   huart->ReceptionType = HAL_UART_RECEPTION_STANDARD;
 }
 
+//启动DMA接收，准备接收数据
 static void UART_Comm_StartReceive(void)
 {
   memset(linux_rx_dma_buffer, 0, sizeof(linux_rx_dma_buffer));
@@ -243,6 +267,7 @@ static void UART_Comm_StartReceive(void)
   (void)UART_Comm_StartReceiveOne(&huart2, base_rx_dma_buffer, &base_rx_dma_pos);
 }
 
+//处理DMA接收的数据，推入解析器
 static void UART_Comm_ProcessRxRange(UartParser_t *parser, UartFrameSlot_t *slot,
                                      const uint8_t *buffer, uint16_t start, uint16_t end)
 {
@@ -254,6 +279,7 @@ static void UART_Comm_ProcessRxRange(UartParser_t *parser, UartFrameSlot_t *slot
   }
 }
 
+//处理DMA接收的数据，推入解析器
 static void UART_Comm_ProcessDmaRx(UartParser_t *parser, UartFrameSlot_t *slot,
                                    const uint8_t *buffer, uint16_t *old_pos, uint16_t pos)
 {
@@ -283,6 +309,7 @@ static void UART_Comm_ProcessDmaRx(UartParser_t *parser, UartFrameSlot_t *slot,
   *old_pos = pos;
 }
 
+//尝试启动发送，如果当前正在发送则缓存待发送帧
 static void UART_Comm_TryStartTx(UartTxSlot_t *slot)
 {
   HAL_StatusTypeDef status;
@@ -321,6 +348,7 @@ static void UART_Comm_TryStartTx(UartTxSlot_t *slot)
   }
 }
 
+//发送一帧数据，非阻塞，如果当前正在发送则缓存待发送帧
 static void UART_Comm_SendFrame(UART_HandleTypeDef *huart, const uint8_t *frame)
 {
   UartTxSlot_t *slot;
@@ -346,6 +374,7 @@ static void UART_Comm_SendFrame(UART_HandleTypeDef *huart, const uint8_t *frame)
   UART_Comm_TryStartTx(slot);
 }
 
+//将接收到的Linux帧转发到底座
 static void UART_Comm_ForwardToBase(const uint8_t *frame)
 {
   if (frame != NULL)
@@ -354,6 +383,7 @@ static void UART_Comm_ForwardToBase(const uint8_t *frame)
   }
 }
 
+//处理接收到的Linux帧，执行相应的命令
 static void UART_Comm_ProcessBucketCommand(const uint8_t *frame)
 {
   uint8_t cmd;
@@ -449,6 +479,7 @@ static void UART_Comm_ProcessBucketCommand(const uint8_t *frame)
   }
 }
 
+//处理接收到的系统命令帧，执行相应的系统操作
 static void UART_Comm_ProcessSystemCommand(const uint8_t *frame)
 {
   SystemMonitor_SetCommand(frame[3]);
@@ -459,6 +490,7 @@ static void UART_Comm_ProcessSystemCommand(const uint8_t *frame)
   }
 }
 
+//处理接收到的Linux帧，执行相应的命令
 static void UART_Comm_ProcessLinuxFrame(const uint8_t *frame)
 {
   uint8_t cmd;
@@ -491,6 +523,7 @@ static void UART_Comm_ProcessLinuxFrame(const uint8_t *frame)
   }
 }
 
+//处理接收到的底座帧，更新底座数据并刷新通信状态
 static void UART_Comm_ProcessBaseFrame(const uint8_t *frame)
 {
   if (frame == NULL)
@@ -550,6 +583,7 @@ uint8_t UART_Comm_BuildStatusFrame(uint8_t *frame)
   return UART_COMM_FRAME_LEN;
 }
 
+//判断底座连接状态，基于最近接收时间和通信状态
 uint8_t UART_Comm_IsBaseConnected(void)
 {
   if ((HAL_GetTick() - base_last_rx_tick) < UART_COMM_BASE_TIMEOUT_MS)
@@ -559,6 +593,7 @@ uint8_t UART_Comm_IsBaseConnected(void)
   return SystemMonitor_GetLinkStatus();
 }
 
+//外部接口：解析接收到的帧并执行命令
 void UART_ParseFrame(uint8_t *data, uint8_t len)
 {
   if ((data == NULL) || (len != UART_COMM_FRAME_LEN))
@@ -572,6 +607,7 @@ void UART_ParseFrame(uint8_t *data, uint8_t len)
   UART_Comm_ProcessLinuxFrame(data);
 }
 
+//外部接口：初始化通信模块，准备接收数据
 void UART_Comm_Init(void)
 {
   memset(&linux_parser, 0, sizeof(linux_parser));
@@ -597,6 +633,7 @@ void UART_Comm_Init(void)
   UART_Comm_StartReceive();
 }
 
+//外部接口：通信任务处理函数，负责解析帧、执行命令和定期发送状态
 void UART_Comm_TaskProcess(void)
 {
   uint8_t frame[UART_COMM_FRAME_LEN];
@@ -624,6 +661,7 @@ void UART_Comm_TaskProcess(void)
   }
 }
 
+//DMA接收完成回调，处理接收到的数据并推入解析器
 void UART_Comm_RxEventCallback(UART_HandleTypeDef *huart, uint16_t pos)
 {
   if (huart == &huart1)
@@ -638,6 +676,7 @@ void UART_Comm_RxEventCallback(UART_HandleTypeDef *huart, uint16_t pos)
   }
 }
 
+//DMA发送完成回调，标记发送完成并尝试发送下一帧
 void UART_Comm_TxCpltCallback(UART_HandleTypeDef *huart)
 {
   UartTxSlot_t *slot;
@@ -657,6 +696,7 @@ void UART_Comm_TxCpltCallback(UART_HandleTypeDef *huart)
   UART_Comm_TryStartTx(slot);
 }
 
+//DMA错误回调，停止当前接收并重启，标记发送失败并尝试发送下一帧
 void UART_Comm_ErrorCallback(UART_HandleTypeDef *huart)
 {
   UartTxSlot_t *slot;

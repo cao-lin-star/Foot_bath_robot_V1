@@ -9,11 +9,11 @@ extern "C" {
 #endif
 
 #ifndef MOTOR_USE_TIM4_PWM
-#define MOTOR_USE_TIM4_PWM           1U
+#define MOTOR_USE_TIM4_PWM           0U
 #endif
 
 #ifndef MOTOR_USE_TIM1_PWM
-#define MOTOR_USE_TIM1_PWM           0U
+#define MOTOR_USE_TIM1_PWM           1U
 #endif
 
 #ifndef MOTOR_AUTO_REVERSE_MS

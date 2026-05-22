@@ -597,6 +597,16 @@
           <GroupName>Hardware</GroupName>
           <Files>
             <File>
+              <FileName>color_light.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Hardware\color_light.c</FilePath>
+            </File>
+            <File>
+              <FileName>color_light.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Hardware\color_light.h</FilePath>
+            </File>
+            <File>
               <FileName>log.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Hardware\log.c</FilePath>

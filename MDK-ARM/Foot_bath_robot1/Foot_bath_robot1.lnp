@@ -37,6 +37,7 @@
 "foot_bath_robot1\cmsis_os2.o"
 "foot_bath_robot1\heap_4.o"
 "foot_bath_robot1\port.o"
+"foot_bath_robot1\color_light.o"
 "foot_bath_robot1\log.o"
 "foot_bath_robot1\motor_control.o"
 "foot_bath_robot1\pump_valve.o"
