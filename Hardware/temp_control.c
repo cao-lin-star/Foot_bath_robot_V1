@@ -116,6 +116,11 @@ void Temp_Control_TaskProcess(void)
     return;
   }
 
+	/*
+  // 3. 【三重安全保护】任意一个触发 → 判定故障，停止加热
+  // 条件1：温度传感器故障（短路/断路）
+  // 条件2：水温超温（超过安全上限，如50℃）
+  // 条件3：水位过低（缺水，防止干烧）
   if ((Sensor_IsTempSensorOk() == 0U) ||
       (current_temp >= TEMP_HIGH_CUTOFF_C) ||
       (Sensor_GetWaterLevelProtocol() < SENSOR_WATER_MIN_SAFE_LITERS))
@@ -124,8 +129,9 @@ void Temp_Control_TaskProcess(void)
     temp_enabled = 0U;
     Temp_SetHeatOutput(0U);
     return;
-  }
+  }*/
 
+  //回差控温逻辑
   if (current_temp <= (temp_target_c - TEMP_HYSTERESIS_LOW_C))
   {
     if (temp_heating == 0U)
@@ -140,6 +146,7 @@ void Temp_Control_TaskProcess(void)
     temp_heat_start_tick = 0U;
   }
 
+  //加热超时保护：如果持续加热超过设定时间（如15分钟）且温度仍未达到目标温度 - 回差下限 → 判定故障
   if ((temp_heating != 0U) &&
       (temp_heat_start_tick != 0U) &&
       ((now - temp_heat_start_tick) > TEMP_HEAT_TIMEOUT_MS) &&

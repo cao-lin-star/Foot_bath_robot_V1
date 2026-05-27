@@ -26,8 +26,8 @@
 // 25℃ 对应的开尔文温度
 #define SENSOR_NTC_T0_K         298.15f
 
-// NTC上拉电阻阻值 10KΩ
-#define SENSOR_NTC_PULLUP_OHMS  10000.0f
+// NTC上拉电阻阻值 100KΩ
+#define SENSOR_NTC_PULLUP_OHMS  100000.0f
 
 // ===================== 内部全局变量 =====================
 // ADC DMA搬运的原始数据（6个通道）
@@ -112,7 +112,7 @@ static float Sensor_CalcNtcTemperature(uint16_t raw)
   voltage_ratio = (float)raw / 4095.0f;
 
   // 根据分压 → 计算NTC电阻值
-  ntc_ohms = SENSOR_NTC_PULLUP_OHMS * voltage_ratio / (1.0f - voltage_ratio);
+  ntc_ohms = SENSOR_NTC_PULLUP_OHMS * (1.0f - voltage_ratio) / voltage_ratio;
 
   // 电阻异常 → 无效温度
   if (ntc_ohms <= 1.0f)
@@ -231,7 +231,7 @@ void Sensor_TaskProcess(void)
     mv = Sensor_RawToMv(sensor_snapshot.raw[index]);
     sensor_snapshot.millivolt[index] = mv;
   }
-
+   
   // 滤波就绪
   sensor_filter_ready = 1U;
 
@@ -247,7 +247,7 @@ void Sensor_TaskProcess(void)
 
   // 4. 水泵电流
   sensor_snapshot.pump_current_ma = Sensor_CalcCurrentMa(sensor_snapshot.millivolt[SENSOR_ADC_PUMP_CURRENT]);
-
+   
   // 5. 电机电流
   sensor_snapshot.motor_current_ma = Sensor_CalcCurrentMa(sensor_snapshot.millivolt[SENSOR_ADC_MOTOR_CURRENT]);
 

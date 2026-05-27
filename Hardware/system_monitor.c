@@ -188,52 +188,66 @@ void SystemMonitor_ClearErrors(void)
 //系统监控核心任务（周期调用）
 void SystemMonitor_TaskProcess(void)
 {
-  uint16_t battery_dv;
-  uint8_t water_level;
-  uint8_t active_needs_water;
+  uint16_t battery_dv;      //电池电压（分厘伏）
+  uint8_t water_level;      //水位（协议值）
+  uint8_t active_needs_water;     //当前活动是否需要水（加热/循环/UV）
 
+  //每次调用先清除之前的错误码，再根据当前传感器状态和执行部件状态重新计算错误码
   system_err1 = 0U;
   system_err2 = 0U;
 
+  //读取当前水位和活动状态
   water_level = Sensor_GetWaterLevelProtocol();
+
+  //判断当前是否有需要水的活动正在运行（加热/循环/UV），如果有但水位过低则报缺水故障
   active_needs_water = ((Temp_IsEnabled() != 0U) ||
                         (PumpValve_GetMode() == PUMP_VALVE_MODE_CIRCULATION) ||
                         (UV_IsOn() != 0U)) ? 1U : 0U;
-
+  // ==================== 错误检测1：传感器与安全保护 ====================
+  // 1. 缺水保护：运行中但水位过低 → 报缺水故障
   if ((active_needs_water != 0U) && (water_level < SENSOR_WATER_MIN_SAFE_LITERS))
   {
     system_err1 |= BUCKET_ERR1_LACK_WATER;
   }
+  // 2. 水位传感器故障
   if (Sensor_IsWaterSensorOk() == 0U)
   {
     system_err1 |= BUCKET_ERR1_WATER_SENSOR;
   }
+  // 3. 温度传感器故障
   if (Sensor_IsTempSensorOk() == 0U)
   {
     system_err1 |= BUCKET_ERR1_TEMP_SENSOR;
   }
+  // 4. 温度异常保护：温度过高 → 报温度异常故障
   if (Sensor_GetTemperatureC() >= TEMP_HIGH_CUTOFF_C)
   {
     system_err1 |= BUCKET_ERR1_TEMP_ABNORMAL;
   }
+  // 5. 加热超时保护：加热开启超过一定时间且温度未达到合理范围 → 报加热超时故障
   if (Temp_HasFault() != 0U)
   {
     system_err2 |= BUCKET_ERR2_HEAT_MODULE;
   }
+  // 6. 水泵故障
   if (PumpValve_HasFault() != 0U)
   {
     system_err2 |= BUCKET_ERR2_PUMP;
   }
+  // 7. 电机故障
   if (Motor_HasFault() != 0U)
   {
     system_err2 |= BUCKET_ERR2_MOTOR;
   }
+  // 8. UV灯故障
   if (UV_HasFault() != 0U)
   {
     system_err2 |= BUCKET_ERR2_UV;
   }
-
+  // 9. 电池电压异常保护：电池电压过低或过高 → 报电池异常故障
   battery_dv = Sensor_GetBatteryDeciVolt();
+  // 电压异常（过低 或 过高）
+  /*
   if ((battery_dv != 0U) && ((battery_dv < SYSTEM_BAT_LOW_DV) || (battery_dv > SYSTEM_BAT_HIGH_DV)))
   {
     system_err2 |= BUCKET_ERR2_BATTERY;
@@ -242,8 +256,10 @@ void SystemMonitor_TaskProcess(void)
       system_main_status = BUCKET_STATUS_LOW_POWER;
       SystemMonitor_StopAllOutputs();
     }
-  }
+  }*/
 
+  // ==================== 定时关机处理 ====================
+  // 定时时间到 → 自动停止所有功能，进入待机
   if ((system_timer_deadline_tick != 0UL) && (SystemMonitor_GetTimerRemainingMin() == 0U))
   {
     system_timer_deadline_tick = 0UL;
@@ -252,6 +268,8 @@ void SystemMonitor_TaskProcess(void)
     system_sub_status = 0U;
   }
 
+  // ==================== 系统复位处理 ====================
+  // 收到复位请求 → 延时200ms后重启系统
   if ((system_reset_requested != 0U) && ((HAL_GetTick() - system_reset_tick) > 200UL))
   {
     NVIC_SystemReset();

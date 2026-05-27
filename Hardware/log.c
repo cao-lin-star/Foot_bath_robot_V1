@@ -25,6 +25,11 @@
 #define LOGGING_PRINTF_BUFFER_LEN   160U
 #endif
 
+// 电流调试输出开关：1=日志打印按摩电机/水泵电流，0=保持原日志格式
+#ifndef LOGGING_ENABLE_CURRENT_DEBUG
+#define LOGGING_ENABLE_CURRENT_DEBUG  1U
+#endif
+
 //重定义fputc函数，使printf函数能够通过UART发送数据
 #if defined(__CC_ARM)
 #pragma import(__use_no_semihosting)
@@ -253,6 +258,22 @@ void Logging_TaskProcess(void)
   }
 
   battery_dv = Sensor_GetBatteryDeciVolt();
+#if (LOGGING_ENABLE_CURRENT_DEBUG != 0U)
+  Logging_Printf("T=%c%d.%uC W=%uL BAT=%u.%uV M=%u P=%u UV=%u MI=%umA PI=%umA ERR=%02X/%02X\r\n",
+                 sign,
+                 temp_x10 / 10,
+                 (uint8_t)(temp_x10 % 10),
+                 Sensor_GetWaterLevelProtocol(),
+                 battery_dv / 10U,
+                 battery_dv % 10U,
+                 Motor_GetLevel(),
+                 (uint8_t)PumpValve_GetMode(),
+                 UV_IsOn(),
+                 Sensor_GetMotorCurrentMa(),
+                 Sensor_GetPumpCurrentMa(),
+                 SystemMonitor_GetErrCode1(),
+                 SystemMonitor_GetErrCode2());
+#else
   Logging_Printf("T=%c%d.%uC W=%uL BAT=%u.%uV M=%u P=%u UV=%u ERR=%02X/%02X\r\n",
                  sign,
                  temp_x10 / 10,
@@ -265,6 +286,7 @@ void Logging_TaskProcess(void)
                  UV_IsOn(),
                  SystemMonitor_GetErrCode1(),
                  SystemMonitor_GetErrCode2());
+#endif
 }
 
 // 获取最后状态

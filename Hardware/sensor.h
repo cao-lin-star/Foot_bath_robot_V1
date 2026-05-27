@@ -9,7 +9,7 @@ extern "C" {
 #endif
 
 #define SENSOR_ADC_CHANNEL_COUNT        6U
-#define SENSOR_WATER_MAX_LITERS         20U
+#define SENSOR_WATER_MAX_LITERS         20U     //假设桶20升
 #define SENSOR_WATER_MIN_SAFE_LITERS    1U
 #define SENSOR_TEMP_INVALID_C           (-100.0f)
 
@@ -18,19 +18,19 @@ extern "C" {
 #endif
 
 #ifndef SENSOR_WATER_EMPTY_MV
-#define SENSOR_WATER_EMPTY_MV           300U
+#define SENSOR_WATER_EMPTY_MV           2020U
 #endif
 
 #ifndef SENSOR_WATER_FULL_MV
-#define SENSOR_WATER_FULL_MV            3000U
+#define SENSOR_WATER_FULL_MV            3180U
 #endif
 
 #ifndef SENSOR_BAT_DIVIDER_X100
-#define SENSOR_BAT_DIVIDER_X100         1100U
+#define SENSOR_BAT_DIVIDER_X100         600U
 #endif
 
 #ifndef SENSOR_DCIN_DIVIDER_X100
-#define SENSOR_DCIN_DIVIDER_X100        1100U
+#define SENSOR_DCIN_DIVIDER_X100        600U
 #endif
 
 #ifndef SENSOR_CURRENT_ZERO_MV

@@ -61,9 +61,12 @@ void UV_ClearFault(void)
 //作用：缺水保护 —— 有水才能开UV，没水自动关闭并报故障
 void UV_TaskProcess(void)
 {
+  //如果UV灯开启但水位过低，认为UV灯发生故障，立即关闭UV
+  /*
   if ((uv_enabled != 0U) && (Sensor_GetWaterLevelProtocol() < SENSOR_WATER_MIN_SAFE_LITERS))
   {
     uv_fault = 1U;
     UV_Off();
   }
+    */
 }

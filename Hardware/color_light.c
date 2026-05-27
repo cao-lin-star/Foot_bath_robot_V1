@@ -87,7 +87,7 @@ void ColorLight_SetRgbw(uint8_t r, uint8_t g, uint8_t b, uint8_t w)
   color_light_b = ColorLight_ClampValue(b);
   color_light_w = ColorLight_ClampValue(w);
   ColorLight_Apply();
-}
+}     
 
 void ColorLight_SetChannel(uint8_t channel, uint8_t value)
 {
@@ -111,13 +111,13 @@ void ColorLight_SetChannel(uint8_t channel, uint8_t value)
       color_light_w = value;
       break;
 
-    default:
+    default: 
       return;
   }
 
   ColorLight_Apply();
 }
-
+ 
 void ColorLight_GetRgbw(uint8_t *r, uint8_t *g, uint8_t *b, uint8_t *w)
 {
   if (r != NULL)
@@ -133,7 +133,7 @@ void ColorLight_GetRgbw(uint8_t *r, uint8_t *g, uint8_t *b, uint8_t *w)
     *b = color_light_b;
   }
   if (w != NULL)
-  {
+  { 
     *w = color_light_w;
   }
 }

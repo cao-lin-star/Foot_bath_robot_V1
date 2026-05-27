@@ -221,6 +221,8 @@ void Motor_TaskProcess(void)
   uint8_t duty;
 
   now = HAL_GetTick();
+  // ===================== 1. 自动换向逻辑 =====================
+  // 如果电机运行中 && 自动反转开启 && 到达换向时间
   if ((motor_running != 0U) &&
       (motor_auto_reverse != 0U) &&
       ((now - motor_last_reverse_tick) >= motor_reverse_interval_ms))
@@ -230,6 +232,8 @@ void Motor_TaskProcess(void)
   }
 
   current_ma = Sensor_GetMotorCurrentMa();
+  // ===================== 2. 过流保护 =====================
+  // 读取电机电流
   if ((motor_running != 0U) && (current_ma > MOTOR_CURRENT_MAX_MA))
   {
     motor_fault = 1U;
@@ -237,7 +241,9 @@ void Motor_TaskProcess(void)
     return;
   }
 
+  // ===================== 3. 输出PWM控制电机 =====================
   duty = Motor_GetDutyPercent();
+  // 根据运行状态输出速度或停止
   if (motor_running != 0U)
   {
     Motor_ApplyPwm(duty, motor_direction);

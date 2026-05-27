@@ -14,7 +14,12 @@
 #define UART_COMM_STATUS_PERIOD_MS       1000UL
 #endif
 
-//通信基准超时时间（毫秒），用于判断通信是否正常
+// Main controller command timeout. Stop bucket outputs if no valid command arrives.
+#ifndef UART_COMM_MAIN_TIMEOUT_MS
+#define UART_COMM_MAIN_TIMEOUT_MS        5000UL
+#endif
+
+// Base station link timeout. Used for LINK_STATUS in status frames.
 #ifndef UART_COMM_BASE_TIMEOUT_MS
 #define UART_COMM_BASE_TIMEOUT_MS        3000UL
 #endif
@@ -22,6 +27,11 @@
 // 强制波特率115200
 #ifndef UART_COMM_FORCE_PROTOCOL_BAUD
 #define UART_COMM_FORCE_PROTOCOL_BAUD    1U
+#endif
+
+// 调试命令开关：1=允许第4字节0xB4打开水泵和三通阀，0=关闭该调试命令
+#ifndef UART_COMM_ENABLE_DEBUG_B4_PUMP_VALVE
+#define UART_COMM_ENABLE_DEBUG_B4_PUMP_VALVE  1U
 #endif
 
 // 接收DMA缓冲区长度
@@ -40,7 +50,7 @@
 #define UART_CMD_BUCKET_STOP             0xA7U      // 停止所有
 #define UART_CMD_BUCKET_SELF_CHECK       0xA8U      // 自检
 #define UART_CMD_BUCKET_LOW_POWER        0xA9U      // 低功耗
-#define UART_CMD_BASE_DRAIN              0xB4U      // 排水
+#define UART_CMD_DEBUG_PUMP_VALVE_ON     0xB4U      // 调试：水泵开 + 三通阀开
 #define UART_CMD_SYSTEM_RESET            0xC0U      // 系统复位
 
 // 解析器结构体：接收缓冲区 + 当前位置
@@ -83,11 +93,13 @@ static uint16_t base_rx_dma_pos;
 static UartTxSlot_t linux_tx_slot;
 static UartTxSlot_t base_tx_slot;
 
-//底座数据、时间、状态
+//状态上报和主控超时控制
 static uint8_t base_data[13];
 static uint32_t base_last_rx_tick;
+static uint32_t main_last_rx_tick;
 static uint32_t last_status_tx_tick;
 static uint8_t last_link_mode = UART_COMM_DEFAULT_LINK_MODE;
+static uint8_t main_timeout_handled;
 
 //系统复位控制
 static void UART_Comm_RestoreIrq(uint32_t primask)
@@ -96,6 +108,53 @@ static void UART_Comm_RestoreIrq(uint32_t primask)
   {
     __enable_irq();
   }
+}
+
+static uint8_t UART_Comm_IsTransitMode(uint8_t link_mode)
+{
+  return (link_mode == UART_COMM_LINK_MODE_TRANSIT) ? 1U : 0U;
+}
+
+static uint8_t UART_Comm_IsValidLinkMode(uint8_t link_mode)
+{
+  if ((link_mode == UART_COMM_LINK_MODE_BUCKET) ||
+      (link_mode == UART_COMM_LINK_MODE_TRANSIT) ||
+      (link_mode == UART_COMM_LINK_MODE_DIRECT))
+  {
+    return 1U;
+  }
+  return 0U;
+}
+
+static void UART_Comm_RecordMainFrame(const uint8_t *frame)
+{
+  if (frame == NULL)
+  {
+    return;    
+  }
+
+  last_link_mode = frame[2];
+  main_last_rx_tick = HAL_GetTick();
+  main_timeout_handled = 0U;
+}
+
+static void UART_Comm_HandleMainTimeout(uint32_t now)
+{
+  if (main_timeout_handled != 0U)
+  {
+    return;
+  }
+
+  if ((now - main_last_rx_tick) < UART_COMM_MAIN_TIMEOUT_MS)
+  {
+    return;
+  }
+
+  //SystemMonitor_StopAllOutputs();   //超时调试注释
+  SystemMonitor_SetBathTimer(0U);
+  SystemMonitor_SetCommand(UART_CMD_BUCKET_STOP);
+  SystemMonitor_SetMainStatus(BUCKET_STATUS_STANDBY, 0U);
+  main_timeout_handled = 1U;
 }
 
 //计算帧校验和
@@ -390,7 +449,6 @@ static void UART_Comm_ProcessBucketCommand(const uint8_t *frame)
 
   cmd = frame[3];
   SystemMonitor_SetCommand(cmd);
-  SystemMonitor_SetLinkStatus(frame[4]);
 
   switch (cmd)
   {
@@ -490,40 +548,64 @@ static void UART_Comm_ProcessSystemCommand(const uint8_t *frame)
   }
 }
 
-//处理接收到的Linux帧，执行相应的命令
-static void UART_Comm_ProcessLinuxFrame(const uint8_t *frame)
+#if (UART_COMM_ENABLE_DEBUG_B4_PUMP_VALVE != 0U)
+// 调试命令：第4字节为0xB4时，直接打开水泵和三通阀
+static void UART_Comm_ProcessDebugPumpValveCommand(void)
+{
+  PumpValve_SetMode(PUMP_VALVE_MODE_DRAIN);
+  SystemMonitor_SetCommand(UART_CMD_DEBUG_PUMP_VALVE_ON);
+  SystemMonitor_SetMainStatus(BUCKET_STATUS_RUNNING, 0U);
+}
+#endif
+
+//处理接收到的Linux帧，返回是否需要立即上报桶体状态
+static uint8_t UART_Comm_ProcessLinuxFrame(const uint8_t *frame)
 {
   uint8_t cmd;
 
   if (frame == NULL)
   {
-    return;
+    return 0U;
   }
 
-  last_link_mode = frame[2];
+  if (UART_Comm_IsValidLinkMode(frame[2]) == 0U)
+  {
+    return 0U;
+  }
+
+  UART_Comm_RecordMainFrame(frame);
   cmd = frame[3];
 
-  if ((cmd >= 0xA0U) && (cmd <= 0xAFU))
+#if (UART_COMM_ENABLE_DEBUG_B4_PUMP_VALVE != 0U)
+  if (cmd == UART_CMD_DEBUG_PUMP_VALVE_ON)
+  {
+    UART_Comm_ProcessDebugPumpValveCommand();
+    return 1U;
+  }
+#endif
+
+  if ((cmd == UART_CMD_IDLE) || ((cmd >= 0xA0U) && (cmd <= 0xAFU)))
   {
     UART_Comm_ProcessBucketCommand(frame);
+    return 1U;
   }
   else if ((cmd >= 0xB0U) && (cmd <= 0xBFU))
   {
-    SystemMonitor_SetCommand(cmd);
-    if (cmd == UART_CMD_BASE_DRAIN)
+    if (UART_Comm_IsTransitMode(frame[2]) != 0U)
     {
-      PumpValve_SetMode(PUMP_VALVE_MODE_DRAIN);
-      SystemMonitor_SetMainStatus(BUCKET_STATUS_RUNNING, 0U);
+      UART_Comm_ForwardToBase(frame);
     }
-    UART_Comm_ForwardToBase(frame);
   }
   else if ((cmd >= 0xC0U) && (cmd <= 0xCFU))
   {
     UART_Comm_ProcessSystemCommand(frame);
+    return 1U;
   }
+
+  return 0U;
 }
 
-//处理接收到的底座帧，更新底座数据并刷新通信状态
+//处理接收到的底座帧，仅在中转模式下原帧转发给主控
 static void UART_Comm_ProcessBaseFrame(const uint8_t *frame)
 {
   if (frame == NULL)
@@ -531,9 +613,13 @@ static void UART_Comm_ProcessBaseFrame(const uint8_t *frame)
     return;
   }
 
+  if (UART_Comm_IsTransitMode(frame[2]) == 0U)
+  {
+    return;
+  }
+
   memcpy(base_data, &frame[16], sizeof(base_data));
   base_last_rx_tick = HAL_GetTick();
-  SystemMonitor_SetLinkStatus(1U);
   UART_Comm_SendFrame(&huart1, frame);
 }
 
@@ -583,14 +669,18 @@ uint8_t UART_Comm_BuildStatusFrame(uint8_t *frame)
   return UART_COMM_FRAME_LEN;
 }
 
-//判断底座连接状态，基于最近接收时间和通信状态
+//判断底座连接状态，基于最近接收到的底座合法帧
 uint8_t UART_Comm_IsBaseConnected(void)
 {
+  if (base_last_rx_tick == 0UL)
+  {
+    return 0U;
+  }
   if ((HAL_GetTick() - base_last_rx_tick) < UART_COMM_BASE_TIMEOUT_MS)
   {
     return 1U;
   }
-  return SystemMonitor_GetLinkStatus();
+  return 0U;
 }
 
 //外部接口：解析接收到的帧并执行命令
@@ -604,7 +694,7 @@ void UART_ParseFrame(uint8_t *data, uint8_t len)
   {
     return;
   }
-  UART_Comm_ProcessLinuxFrame(data);
+  (void)UART_Comm_ProcessLinuxFrame(data);
 }
 
 //外部接口：初始化通信模块，准备接收数据
@@ -620,8 +710,10 @@ void UART_Comm_Init(void)
   linux_tx_slot.huart = &huart1;
   base_tx_slot.huart = &huart2;
   base_last_rx_tick = 0UL;
+  main_last_rx_tick = HAL_GetTick();
   last_status_tx_tick = 0UL;
   last_link_mode = UART_COMM_DEFAULT_LINK_MODE;
+  main_timeout_handled = 0U;
 
 #if UART_COMM_FORCE_PROTOCOL_BAUD
   huart1.Init.BaudRate = 115200U;
@@ -641,23 +733,25 @@ void UART_Comm_TaskProcess(void)
 
   if (UART_Comm_FetchFrame(&linux_rx_slot, frame) != 0U)
   {
-    UART_Comm_ProcessLinuxFrame(frame);
-    UART_Comm_BuildStatusFrame(frame);
-    UART_Comm_SendFrame(&huart1, frame);
+    if (UART_Comm_ProcessLinuxFrame(frame) != 0U)
+    {
+      UART_Comm_BuildStatusFrame(frame);
+      UART_Comm_SendFrame(&huart1, frame);
+    }
   }
 
   if (UART_Comm_FetchFrame(&base_rx_slot, frame) != 0U)
   {
     UART_Comm_ProcessBaseFrame(frame);
   }
-
+	
   now = HAL_GetTick();
+  UART_Comm_HandleMainTimeout(now);
   if ((now - last_status_tx_tick) >= UART_COMM_STATUS_PERIOD_MS)
   {
     last_status_tx_tick = now;
     UART_Comm_BuildStatusFrame(frame);
     UART_Comm_SendFrame(&huart1, frame);
-    UART_Comm_SendFrame(&huart2, frame);
   }
 }
 

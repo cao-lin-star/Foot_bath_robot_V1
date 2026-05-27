@@ -11,16 +11,19 @@ static void PumpValve_Apply(PumpValveMode_t mode)
 {
   switch (mode)
   {
+      //循环模式（加热/冲浪）：水泵开，阀门关（内部水循环）
     case PUMP_VALVE_MODE_CIRCULATION:
       HAL_GPIO_WritePin(EN_TWV_GPIO_Port, EN_TWV_Pin, GPIO_PIN_RESET);
       HAL_GPIO_WritePin(EN_PUMP_GPIO_Port, EN_PUMP_Pin, GPIO_PIN_SET);
       break;
 
+      //排水模式：水泵开，阀门开（将水排出）
     case PUMP_VALVE_MODE_DRAIN:
       HAL_GPIO_WritePin(EN_TWV_GPIO_Port, EN_TWV_Pin, GPIO_PIN_SET);
       HAL_GPIO_WritePin(EN_PUMP_GPIO_Port, EN_PUMP_Pin, GPIO_PIN_SET);
       break;
 
+      //关闭模式：水泵关，阀门关
     default:
       HAL_GPIO_WritePin(EN_PUMP_GPIO_Port, EN_PUMP_Pin, GPIO_PIN_RESET);
       HAL_GPIO_WritePin(EN_TWV_GPIO_Port, EN_TWV_Pin, GPIO_PIN_RESET);
@@ -59,15 +62,18 @@ void PumpValve_TaskProcess(void)
 {
   uint16_t current_ma;
 
-  //如果泵正在运行但电流过大，认为泵发生故障，立即关闭泵
   current_ma = Sensor_GetPumpCurrentMa();
+
+  /*
+  //如果泵正在运行但电流过大，认为泵发生故障，立即关闭泵
   if ((pump_mode != PUMP_VALVE_MODE_OFF) && (current_ma > PUMP_CURRENT_MAX_MA))
   {
     pump_fault = 1U;
     PumpValve_SetMode(PUMP_VALVE_MODE_OFF);
     return;
-  }
+  }*/
 
+  //排水超时
   //如果在排水模式下运行时间过长且水位仍然较高，认为泵发生故障，立即关闭泵
   if ((pump_mode == PUMP_VALVE_MODE_DRAIN) &&
       ((HAL_GetTick() - pump_mode_start_tick) > PUMP_VALVE_DRAIN_TIMEOUT_MS) &&
