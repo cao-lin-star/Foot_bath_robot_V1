@@ -45,6 +45,7 @@ foot_bath_robot1\log.o: ..\Hardware\motor_control.h
 foot_bath_robot1\log.o: ..\Hardware\pump_valve.h
 foot_bath_robot1\log.o: ..\Hardware\sensor.h
 foot_bath_robot1\log.o: ..\Hardware\system_monitor.h
+foot_bath_robot1\log.o: ..\Hardware\temp_control.h
 foot_bath_robot1\log.o: ../Core/Inc/usart.h
 foot_bath_robot1\log.o: ../Core/Inc/main.h
 foot_bath_robot1\log.o: ..\Hardware\uv_lamp.h

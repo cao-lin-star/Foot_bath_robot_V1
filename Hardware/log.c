@@ -3,6 +3,7 @@
 #include "pump_valve.h"
 #include "sensor.h"
 #include "system_monitor.h"
+#include "temp_control.h"
 #include "usart.h"
 #include "uv_lamp.h"
 #include <stdarg.h>
@@ -28,6 +29,19 @@
 // 电流调试输出开关：1=日志打印按摩电机/水泵电流，0=保持原日志格式
 #ifndef LOGGING_ENABLE_CURRENT_DEBUG
 #define LOGGING_ENABLE_CURRENT_DEBUG  1U
+#endif
+
+// Water count debug output. Set to 0U to hide WC=xxxx from status logs.
+#ifndef LOGGING_ENABLE_WATER_COUNT_DEBUG
+#define LOGGING_ENABLE_WATER_COUNT_DEBUG  1U
+#endif
+
+#if (LOGGING_ENABLE_WATER_COUNT_DEBUG != 0U)
+#define LOGGING_WATER_COUNT_FMT       " WC=%lu"
+#define LOGGING_WATER_COUNT_ARG       , Sensor_GetWaterFrequencyHz()
+#else
+#define LOGGING_WATER_COUNT_FMT
+#define LOGGING_WATER_COUNT_ARG
 #endif
 
 //重定义fputc函数，使printf函数能够通过UART发送数据
@@ -259,30 +273,34 @@ void Logging_TaskProcess(void)
 
   battery_dv = Sensor_GetBatteryDeciVolt();
 #if (LOGGING_ENABLE_CURRENT_DEBUG != 0U)
-  Logging_Printf("T=%c%d.%uC W=%uL BAT=%u.%uV M=%u P=%u UV=%u MI=%umA PI=%umA ERR=%02X/%02X\r\n",
+  Logging_Printf("T=%c%d.%uC W=%uL" LOGGING_WATER_COUNT_FMT " BAT=%u.%uV M=%u P=%u H=%u UV=%u MI=%umA PI=%umA ERR=%02X/%02X\r\n",
                  sign,
                  temp_x10 / 10,
                  (uint8_t)(temp_x10 % 10),
-                 Sensor_GetWaterLevelProtocol(),
+                 Sensor_GetWaterLevelProtocol()
+                 LOGGING_WATER_COUNT_ARG,
                  battery_dv / 10U,
                  battery_dv % 10U,
                  Motor_GetLevel(),
                  (uint8_t)PumpValve_GetMode(),
+                 Temp_IsHeating(),
                  UV_IsOn(),
                  Sensor_GetMotorCurrentMa(),
                  Sensor_GetPumpCurrentMa(),
                  SystemMonitor_GetErrCode1(),
                  SystemMonitor_GetErrCode2());
 #else
-  Logging_Printf("T=%c%d.%uC W=%uL BAT=%u.%uV M=%u P=%u UV=%u ERR=%02X/%02X\r\n",
+  Logging_Printf("T=%c%d.%uC W=%uL" LOGGING_WATER_COUNT_FMT " BAT=%u.%uV M=%u P=%u H=%u UV=%u ERR=%02X/%02X\r\n",
                  sign,
                  temp_x10 / 10,
                  (uint8_t)(temp_x10 % 10),
-                 Sensor_GetWaterLevelProtocol(),
+                 Sensor_GetWaterLevelProtocol()
+                 LOGGING_WATER_COUNT_ARG,
                  battery_dv / 10U,
                  battery_dv % 10U,
                  Motor_GetLevel(),
                  (uint8_t)PumpValve_GetMode(),
+                 Temp_IsHeating(),
                  UV_IsOn(),
                  SystemMonitor_GetErrCode1(),
                  SystemMonitor_GetErrCode2());

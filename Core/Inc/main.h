@@ -57,8 +57,6 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define W_LEVEL_Pin GPIO_PIN_0
-#define W_LEVEL_GPIO_Port GPIOA
 #define EN_HEAT_Pin GPIO_PIN_1
 #define EN_HEAT_GPIO_Port GPIOA
 #define MCU_TX_Pin GPIO_PIN_2
@@ -69,8 +67,8 @@ void Error_Handler(void);
 #define AD_DCIN_GPIO_Port GPIOA
 #define AD_BAT_V_Pin GPIO_PIN_5
 #define AD_BAT_V_GPIO_Port GPIOA
-#define DCIN_ON_Pin GPIO_PIN_6
-#define DCIN_ON_GPIO_Port GPIOA
+#define W_LEVEL_Pin GPIO_PIN_6
+#define W_LEVEL_GPIO_Port GPIOA
 #define AD_NTC_Pin GPIO_PIN_7
 #define AD_NTC_GPIO_Port GPIOA
 #define AD_PUMP_I_Pin GPIO_PIN_0
@@ -81,6 +79,8 @@ void Error_Handler(void);
 #define Log_TX_GPIO_Port GPIOB
 #define Log_RX_Pin GPIO_PIN_11
 #define Log_RX_GPIO_Port GPIOB
+#define DCIN_ON_Pin GPIO_PIN_12
+#define DCIN_ON_GPIO_Port GPIOB
 #define Linux_TX_Pin GPIO_PIN_9
 #define Linux_TX_GPIO_Port GPIOA
 #define Linux_RX_Pin GPIO_PIN_10

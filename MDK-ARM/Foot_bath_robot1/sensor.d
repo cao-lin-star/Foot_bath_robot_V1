@@ -43,5 +43,6 @@ foot_bath_robot1\sensor.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/li
 foot_bath_robot1\sensor.o: ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h
 foot_bath_robot1\sensor.o: ../Core/Inc/adc.h
 foot_bath_robot1\sensor.o: ../Core/Inc/main.h
+foot_bath_robot1\sensor.o: ../Core/Inc/tim.h
 foot_bath_robot1\sensor.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
 foot_bath_robot1\sensor.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
