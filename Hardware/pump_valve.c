@@ -64,14 +64,14 @@ void PumpValve_TaskProcess(void)
 
   current_ma = Sensor_GetPumpCurrentMa();
 
-  /*
+  
   //如果泵正在运行但电流过大，认为泵发生故障，立即关闭泵
   if ((pump_mode != PUMP_VALVE_MODE_OFF) && (current_ma > PUMP_CURRENT_MAX_MA))
   {
     pump_fault = 1U;
     PumpValve_SetMode(PUMP_VALVE_MODE_OFF);
     return;
-  }*/
+  }
 
   //排水超时
   //如果在排水模式下运行时间过长且水位仍然较高，认为泵发生故障，立即关闭泵

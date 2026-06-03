@@ -157,7 +157,7 @@ uint8_t SystemMonitor_GetTimerRemainingMin(void)
   }
 
   remaining_ms = system_timer_deadline_tick - now;
-  return (uint8_t)((remaining_ms + 59999UL) / 60000UL);
+  return (uint8_t)(remaining_ms / 60000UL);
 }
 
 //请求系统复位
@@ -279,7 +279,7 @@ void SystemMonitor_TaskProcess(void)
 
   // ==================== 定时关机处理 ====================
   // 定时时间到 → 自动停止所有功能，进入待机
-  if ((system_timer_deadline_tick != 0UL) && (SystemMonitor_GetTimerRemainingMin() == 0U))
+  if ((system_timer_deadline_tick != 0UL) && (SystemMonitor_GetTimerRemainingSec() == 0UL))
   {
     system_timer_deadline_tick = 0UL;
     SystemMonitor_StopAllOutputs();

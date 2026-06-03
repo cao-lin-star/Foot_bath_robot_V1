@@ -562,6 +562,7 @@ static void UART_Comm_ProcessDebugPumpValveCommand(void)
 static uint8_t UART_Comm_ProcessLinuxFrame(const uint8_t *frame)
 {
   uint8_t cmd;
+  uint8_t is_transit;
 
   if (frame == NULL)
   {
@@ -575,6 +576,12 @@ static uint8_t UART_Comm_ProcessLinuxFrame(const uint8_t *frame)
 
   UART_Comm_RecordMainFrame(frame);
   cmd = frame[3];
+  is_transit = UART_Comm_IsTransitMode(frame[2]);
+
+  if (is_transit != 0U)
+  {
+    UART_Comm_ForwardToBase(frame);
+  }
 
 #if (UART_COMM_ENABLE_DEBUG_B4_PUMP_VALVE != 0U)
   if (cmd == UART_CMD_DEBUG_PUMP_VALVE_ON)
@@ -589,14 +596,7 @@ static uint8_t UART_Comm_ProcessLinuxFrame(const uint8_t *frame)
     UART_Comm_ProcessBucketCommand(frame);
     return 1U;
   }
-  else if ((cmd >= 0xB0U) && (cmd <= 0xBFU))
-  {
-    if (UART_Comm_IsTransitMode(frame[2]) != 0U)
-    {
-      UART_Comm_ForwardToBase(frame);
-    }
-  }
-  else if ((cmd >= 0xC0U) && (cmd <= 0xCFU))
+  else if ((is_transit == 0U) && (cmd >= 0xC0U) && (cmd <= 0xCFU))
   {
     UART_Comm_ProcessSystemCommand(frame);
     return 1U;
