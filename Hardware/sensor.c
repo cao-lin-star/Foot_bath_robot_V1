@@ -114,7 +114,7 @@ static uint16_t Sensor_CalcScaledDecivolt(uint16_t adc_mv, uint16_t divider_x100
   return (uint16_t)((input_mv + 50U) / 100U);
 }
 
-static uint16_t Sensor_CalcCurrentMa(uint16_t adc_mv)
+static uint16_t Sensor_CalcPumpCurrentMa(uint16_t adc_mv)
 {
   uint32_t current_ma;
 
@@ -122,8 +122,33 @@ static uint16_t Sensor_CalcCurrentMa(uint16_t adc_mv)
   {
     return 0U;
   }
+  if (SENSOR_PUMP_CURRENT_SENSE_MOHM == 0U)
+  {
+    return 0U;
+  }
 
-  current_ma = ((uint32_t)(adc_mv - SENSOR_CURRENT_ZERO_MV) * SENSOR_CURRENT_MA_PER_MV_X10) / 10U;
+  current_ma = ((uint32_t)(adc_mv - SENSOR_CURRENT_ZERO_MV) * 1000U +
+                (SENSOR_PUMP_CURRENT_SENSE_MOHM / 2U)) /
+               SENSOR_PUMP_CURRENT_SENSE_MOHM;
+  if (current_ma > 65535U)
+  {
+    current_ma = 65535U;
+  }
+
+  return (uint16_t)current_ma;
+}
+
+static uint16_t Sensor_CalcMotorCurrentMa(uint16_t adc_mv)
+{
+  uint32_t current_ma;
+
+  if (SENSOR_MOTOR_CURRENT_SENSE_MOHM == 0U)
+  {
+    return 0U;
+  }
+
+  current_ma = ((uint32_t)adc_mv * 1000U + (SENSOR_MOTOR_CURRENT_SENSE_MOHM / 2U)) /
+               SENSOR_MOTOR_CURRENT_SENSE_MOHM;
   if (current_ma > 65535U)
   {
     current_ma = 65535U;
@@ -303,8 +328,8 @@ void Sensor_TaskProcess(void)
 
   sensor_snapshot.battery_decivolt = Sensor_CalcScaledDecivolt(sensor_snapshot.millivolt[SENSOR_ADC_BATTERY_VOLT], SENSOR_BAT_DIVIDER_X100);
   sensor_snapshot.dcin_decivolt = Sensor_CalcScaledDecivolt(sensor_snapshot.millivolt[SENSOR_ADC_DCIN_VOLT], SENSOR_DCIN_DIVIDER_X100);
-  sensor_snapshot.pump_current_ma = Sensor_CalcCurrentMa(sensor_snapshot.millivolt[SENSOR_ADC_PUMP_CURRENT]);
-  sensor_snapshot.motor_current_ma = Sensor_CalcCurrentMa(sensor_snapshot.millivolt[SENSOR_ADC_MOTOR_CURRENT]);
+  sensor_snapshot.pump_current_ma = Sensor_CalcPumpCurrentMa(sensor_snapshot.millivolt[SENSOR_ADC_PUMP_CURRENT]);
+  sensor_snapshot.motor_current_ma = Sensor_CalcMotorCurrentMa(sensor_snapshot.millivolt[SENSOR_ADC_MOTOR_CURRENT]);
 
   temp_c = Sensor_CalcNtcTemperature(sensor_snapshot.raw[SENSOR_ADC_NTC_TEMP]);
   Sensor_ProcessTemperature(temp_c);

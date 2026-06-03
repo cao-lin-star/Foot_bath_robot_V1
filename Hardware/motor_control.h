@@ -25,10 +25,10 @@ extern "C" {
 #define MOTOR_AUTO_REVERSE_MS        30000UL
 #endif
 
-// 电机最大允许电流：3000mA = 3A
-// 超过该电流判定过流故障，停止电机
+// Motor overcurrent threshold: 2100mA, slightly below the 2.2A hardware limit.
+// Stop the motor when the measured current exceeds this value.
 #ifndef MOTOR_CURRENT_MAX_MA
-#define MOTOR_CURRENT_MAX_MA         3000U
+#define MOTOR_CURRENT_MAX_MA         2100U
 #endif
 
 // ==================== 电机方向枚举 ====================

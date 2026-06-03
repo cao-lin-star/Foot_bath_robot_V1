@@ -151,9 +151,9 @@ static void UART_Comm_HandleMainTimeout(uint32_t now)
   }
 
   //SystemMonitor_StopAllOutputs();   //超时调试注释
-  SystemMonitor_SetBathTimer(0U);
-  SystemMonitor_SetCommand(UART_CMD_BUCKET_STOP);
-  SystemMonitor_SetMainStatus(BUCKET_STATUS_STANDBY, 0U);
+  //SystemMonitor_SetBathTimer(0U);   //超时不清除定时，避免倒计时被5秒通信超时打断
+  //SystemMonitor_SetCommand(UART_CMD_BUCKET_STOP);
+  //SystemMonitor_SetMainStatus(BUCKET_STATUS_STANDBY, 0U);
   main_timeout_handled = 1U;
 }
 

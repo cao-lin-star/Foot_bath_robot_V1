@@ -39,7 +39,6 @@ static uint32_t SystemMonitor_TimerCodeToMs(uint8_t timer_code)
     case 4U:
       return 25UL * 60UL * 1000UL;
     case 5U:
-    case 6U:
       return 30UL * 60UL * 1000UL;
     default:
       return 0UL;
@@ -162,6 +161,26 @@ uint8_t SystemMonitor_GetTimerRemainingMin(void)
 }
 
 //请求系统复位
+uint32_t SystemMonitor_GetTimerRemainingSec(void)
+{
+  uint32_t now;
+  uint32_t remaining_ms;
+
+  if (system_timer_deadline_tick == 0UL)
+  {
+    return 0UL;
+  }
+
+  now = HAL_GetTick();
+  if ((int32_t)(system_timer_deadline_tick - now) <= 0)
+  {
+    return 0UL;
+  }
+
+  remaining_ms = system_timer_deadline_tick - now;
+  return (remaining_ms + 999UL) / 1000UL;
+}
+
 void SystemMonitor_RequestReset(void)
 {
   system_reset_requested = 1U;

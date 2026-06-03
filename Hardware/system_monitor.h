@@ -62,6 +62,7 @@ void SystemMonitor_SetLinkStatus(uint8_t link_status);
 uint8_t SystemMonitor_GetLinkStatus(void);
 void SystemMonitor_SetBathTimer(uint8_t timer_code);
 uint8_t SystemMonitor_GetTimerRemainingMin(void);
+uint32_t SystemMonitor_GetTimerRemainingSec(void);
 void SystemMonitor_RequestReset(void);
 uint8_t SystemMonitor_IsResetRequested(void);
 void SystemMonitor_ClearErrors(void);

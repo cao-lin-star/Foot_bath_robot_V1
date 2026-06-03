@@ -273,7 +273,7 @@ void Logging_TaskProcess(void)
 
   battery_dv = Sensor_GetBatteryDeciVolt();
 #if (LOGGING_ENABLE_CURRENT_DEBUG != 0U)
-  Logging_Printf("T=%c%d.%uC W=%uL" LOGGING_WATER_COUNT_FMT " BAT=%u.%uV M=%u P=%u H=%u UV=%u MI=%umA PI=%umA ERR=%02X/%02X\r\n",
+  Logging_Printf("T=%c%d.%uC W=%uL" LOGGING_WATER_COUNT_FMT " BAT=%u.%uV MOTMV=%umV PUMPMV=%umV M=%u P=%u H=%u UV=%u TS=%lus MI=%umA PI=%umA ERR=%02X/%02X\r\n",
                  sign,
                  temp_x10 / 10,
                  (uint8_t)(temp_x10 % 10),
@@ -281,16 +281,19 @@ void Logging_TaskProcess(void)
                  LOGGING_WATER_COUNT_ARG,
                  battery_dv / 10U,
                  battery_dv % 10U,
+                 Sensor_GetMilliVolt(SENSOR_ADC_MOTOR_CURRENT),
+                 Sensor_GetMilliVolt(SENSOR_ADC_PUMP_CURRENT),
                  Motor_GetLevel(),
                  (uint8_t)PumpValve_GetMode(),
                  Temp_IsHeating(),
                  UV_IsOn(),
+                 SystemMonitor_GetTimerRemainingSec(),
                  Sensor_GetMotorCurrentMa(),
                  Sensor_GetPumpCurrentMa(),
                  SystemMonitor_GetErrCode1(),
                  SystemMonitor_GetErrCode2());
 #else
-  Logging_Printf("T=%c%d.%uC W=%uL" LOGGING_WATER_COUNT_FMT " BAT=%u.%uV M=%u P=%u H=%u UV=%u ERR=%02X/%02X\r\n",
+  Logging_Printf("T=%c%d.%uC W=%uL" LOGGING_WATER_COUNT_FMT " BAT=%u.%uV MOTMV=%umV PUMPMV=%umV M=%u P=%u H=%u UV=%u TS=%lus ERR=%02X/%02X\r\n",
                  sign,
                  temp_x10 / 10,
                  (uint8_t)(temp_x10 % 10),
@@ -298,10 +301,13 @@ void Logging_TaskProcess(void)
                  LOGGING_WATER_COUNT_ARG,
                  battery_dv / 10U,
                  battery_dv % 10U,
+                 Sensor_GetMilliVolt(SENSOR_ADC_MOTOR_CURRENT),
+                 Sensor_GetMilliVolt(SENSOR_ADC_PUMP_CURRENT),
                  Motor_GetLevel(),
                  (uint8_t)PumpValve_GetMode(),
                  Temp_IsHeating(),
                  UV_IsOn(),
+                 SystemMonitor_GetTimerRemainingSec(),
                  SystemMonitor_GetErrCode1(),
                  SystemMonitor_GetErrCode2());
 #endif
