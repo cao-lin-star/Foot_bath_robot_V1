@@ -266,7 +266,7 @@ void SystemMonitor_TaskProcess(void)
   // 9. 电池电压异常保护：电池电压过低或过高 → 报电池异常故障
   battery_dv = Sensor_GetBatteryDeciVolt();
   // 电压异常（过低 或 过高）
-  /*
+  
   if ((battery_dv != 0U) && ((battery_dv < SYSTEM_BAT_LOW_DV) || (battery_dv > SYSTEM_BAT_HIGH_DV)))
   {
     system_err2 |= BUCKET_ERR2_BATTERY;
@@ -275,7 +275,7 @@ void SystemMonitor_TaskProcess(void)
       system_main_status = BUCKET_STATUS_LOW_POWER;
       SystemMonitor_StopAllOutputs();
     }
-  }*/
+  }
 
   // ==================== 定时关机处理 ====================
   // 定时时间到 → 自动停止所有功能，进入待机

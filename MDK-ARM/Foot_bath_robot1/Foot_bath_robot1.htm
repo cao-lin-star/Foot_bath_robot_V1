@@ -3,7 +3,7 @@
 <title>Static Call Graph - [Foot_bath_robot1\Foot_bath_robot1.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image Foot_bath_robot1\Foot_bath_robot1.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060750: Last Updated: Wed Jun 03 15:46:33 2026
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060750: Last Updated: Wed Jun 03 15:55:50 2026
 <BR><P>
 <H3>Maximum Stack Usage =        432 bytes + Unknown(Functions without stacksize, Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -2226,16 +2226,19 @@ Global Symbols
 </UL>
 <BR>[Calls]<UL><LI><a href="#[ba]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_GetTick
 </UL>
-<BR>[Called By]<UL><LI><a href="#[17c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_Comm_ProcessBucketCommand
+<BR>[Called By]<UL><LI><a href="#[bf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_Comm_TaskProcess
+<LI><a href="#[17c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_Comm_ProcessBucketCommand
 </UL>
 
 <P><STRONG><a name="[17d]"></a>SystemMonitor_SetCommand</STRONG> (Thumb, 6 bytes, Stack size 0 bytes, system_monitor.o(i.SystemMonitor_SetCommand))
-<BR><BR>[Called By]<UL><LI><a href="#[183]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_Comm_ProcessLinuxFrame
+<BR><BR>[Called By]<UL><LI><a href="#[bf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_Comm_TaskProcess
+<LI><a href="#[183]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_Comm_ProcessLinuxFrame
 <LI><a href="#[17c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_Comm_ProcessBucketCommand
 </UL>
 
 <P><STRONG><a name="[180]"></a>SystemMonitor_SetMainStatus</STRONG> (Thumb, 8 bytes, Stack size 0 bytes, system_monitor.o(i.SystemMonitor_SetMainStatus))
-<BR><BR>[Called By]<UL><LI><a href="#[183]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_Comm_ProcessLinuxFrame
+<BR><BR>[Called By]<UL><LI><a href="#[bf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_Comm_TaskProcess
+<LI><a href="#[183]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_Comm_ProcessLinuxFrame
 <LI><a href="#[17c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_Comm_ProcessBucketCommand
 </UL>
 
@@ -2247,12 +2250,13 @@ Global Symbols
 <LI><a href="#[141]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;PumpValve_SetMode
 <LI><a href="#[13d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Motor_Stop
 </UL>
-<BR>[Called By]<UL><LI><a href="#[162]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SystemMonitor_TaskProcess
+<BR>[Called By]<UL><LI><a href="#[bf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_Comm_TaskProcess
+<LI><a href="#[162]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SystemMonitor_TaskProcess
 <LI><a href="#[183]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_Comm_ProcessLinuxFrame
 <LI><a href="#[17c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_Comm_ProcessBucketCommand
 </UL>
 
-<P><STRONG><a name="[162]"></a>SystemMonitor_TaskProcess</STRONG> (Thumb, 220 bytes, Stack size 16 bytes, system_monitor.o(i.SystemMonitor_TaskProcess))
+<P><STRONG><a name="[162]"></a>SystemMonitor_TaskProcess</STRONG> (Thumb, 250 bytes, Stack size 16 bytes, system_monitor.o(i.SystemMonitor_TaskProcess))
 <BR><BR>[Stack]<UL><LI>Max Depth = 56<LI>Call Chain = SystemMonitor_TaskProcess &rArr; SystemMonitor_StopAllOutputs &rArr; PumpValve_SetMode &rArr; PumpValve_Apply
 </UL>
 <BR>[Calls]<UL><LI><a href="#[ba]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_GetTick
@@ -2468,7 +2472,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[fb]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_UARTEx_RxEventCallback
 </UL>
 
-<P><STRONG><a name="[bf]"></a>UART_Comm_TaskProcess</STRONG> (Thumb, 140 bytes, Stack size 48 bytes, uart_comm.o(i.UART_Comm_TaskProcess))
+<P><STRONG><a name="[bf]"></a>UART_Comm_TaskProcess</STRONG> (Thumb, 166 bytes, Stack size 48 bytes, uart_comm.o(i.UART_Comm_TaskProcess))
 <BR><BR>[Stack]<UL><LI>Max Depth = 148<LI>Call Chain = UART_Comm_TaskProcess &rArr; UART_Comm_ProcessLinuxFrame &rArr; UART_Comm_SendFrame &rArr; UART_Comm_TryStartTx &rArr; HAL_UART_Transmit_DMA &rArr; HAL_DMA_Start_IT &rArr; DMA_SetConfig
 </UL>
 <BR>[Calls]<UL><LI><a href="#[ba]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_GetTick
@@ -2477,6 +2481,10 @@ Global Symbols
 <LI><a href="#[184]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_Comm_SendFrame
 <LI><a href="#[183]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_Comm_ProcessLinuxFrame
 <LI><a href="#[179]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_Comm_FetchFrame
+<LI><a href="#[15f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SystemMonitor_StopAllOutputs
+<LI><a href="#[180]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SystemMonitor_SetMainStatus
+<LI><a href="#[17d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SystemMonitor_SetCommand
+<LI><a href="#[15e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SystemMonitor_SetBathTimer
 </UL>
 <BR>[Called By]<UL><LI><a href="#[4a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Communication_Task
 </UL>
